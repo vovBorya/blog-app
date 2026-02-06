@@ -45,6 +45,10 @@ omit = [
     "*/__pycache__/*",
     "manage.py",
     "conftest.py",
+    "*/management/commands/seed_data.py",
+    "core/asgi.py",
+    "core/wsgi.py",
+    "core/urls.py",
 ]
 
 [tool.coverage.report]
