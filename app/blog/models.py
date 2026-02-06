@@ -72,18 +72,14 @@ class BlogPost(models.Model):
         DRAFT = "draft", "Draft"
         PUBLISHED = "published", "Published"
 
-    title = models.CharField(
-        "title", max_length=200, help_text="The title of the blog post."
-    )
+    title = models.CharField("title", max_length=200, help_text="The title of the blog post.")
     slug = models.SlugField(
         "slug",
         max_length=250,
         unique=True,
         help_text="URL-friendly version of the title.",
     )
-    content = models.TextField(
-        "content", help_text="The main content of the blog post."
-    )
+    content = models.TextField("content", help_text="The main content of the blog post.")
     excerpt = models.TextField(
         "excerpt", max_length=500, blank=True, help_text="A short summary of the post."
     )
@@ -191,9 +187,7 @@ class Comment(models.Model):
         related_name="comments",
         help_text="The user who wrote this comment.",
     )
-    content = models.TextField(
-        "content", max_length=2000, help_text="The comment content."
-    )
+    content = models.TextField("content", max_length=2000, help_text="The comment content.")
     parent = models.ForeignKey(
         "self",
         on_delete=models.CASCADE,

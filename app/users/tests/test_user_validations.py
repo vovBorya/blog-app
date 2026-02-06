@@ -70,10 +70,7 @@ class TestUpdateProfileMutation:
         assert result.data["updateProfile"]["user"]["firstName"] == "Updated"
         assert result.data["updateProfile"]["user"]["lastName"] == "Name"
         assert result.data["updateProfile"]["user"]["bio"] == "New bio"
-        assert (
-            result.data["updateProfile"]["user"]["avatarUrl"]
-            == "https://example.com/avatar.jpg"
-        )
+        assert result.data["updateProfile"]["user"]["avatarUrl"] == "https://example.com/avatar.jpg"
 
     def test_update_profile_partial(self, user):
         """Test updating only some fields."""
@@ -113,10 +110,7 @@ class TestUpdateProfileMutation:
         result = schema.execute(query, context_value=context)
 
         # Should fail due to login_required
-        assert (
-            result.errors is not None
-            or result.data["updateProfile"]["success"] is False
-        )
+        assert result.errors is not None or result.data["updateProfile"]["success"] is False
 
 
 @pytest.mark.django_db
@@ -208,10 +202,7 @@ class TestChangePasswordMutation:
         result = schema.execute(query, context_value=context)
 
         # Should fail due to login_required
-        assert (
-            result.errors is not None
-            or result.data["changePassword"]["success"] is False
-        )
+        assert result.errors is not None or result.data["changePassword"]["success"] is False
 
 
 @pytest.mark.django_db

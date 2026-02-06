@@ -1,6 +1,6 @@
 [flake8]
 # Match black's line length
-max-line-length = 88
+max-line-length = 100
 # Ignore errors that conflict with black
 extend-ignore = E203
 # Exclude standard folders

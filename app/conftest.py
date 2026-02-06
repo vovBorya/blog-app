@@ -39,9 +39,7 @@ def create_user():
         email="test@example.com", username="testuser", password="TestPass123!", **kwargs
     ):
         User = get_user_model()
-        return User.objects.create_user(
-            email=email, username=username, password=password, **kwargs
-        )
+        return User.objects.create_user(email=email, username=username, password=password, **kwargs)
 
     return _create_user
 

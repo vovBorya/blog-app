@@ -29,9 +29,7 @@ def user():
 @pytest.fixture
 def author(user):
     """Create a test author."""
-    return Author.objects.create(
-        user=user, bio="Test author bio", website="https://example.com"
-    )
+    return Author.objects.create(user=user, bio="Test author bio", website="https://example.com")
 
 
 @pytest.fixture
@@ -120,12 +118,8 @@ class TestBlogPostModel:
 
     def test_blog_post_unique_slug(self, author):
         """Test that slugs are unique."""
-        post1 = BlogPost.objects.create(
-            title="Same Title", content="Content 1", author=author
-        )
-        post2 = BlogPost.objects.create(
-            title="Same Title", content="Content 2", author=author
-        )
+        post1 = BlogPost.objects.create(title="Same Title", content="Content 1", author=author)
+        post2 = BlogPost.objects.create(title="Same Title", content="Content 2", author=author)
 
         assert post1.slug == "same-title"
         assert post2.slug == "same-title-1"
@@ -162,15 +156,9 @@ class TestBlogPostModel:
     def test_blog_post_comment_count(self, blog_post, user):
         """Test the comment_count property."""
         # Create some comments
-        Comment.objects.create(
-            post=blog_post, author=user, content="Comment 1", is_approved=True
-        )
-        Comment.objects.create(
-            post=blog_post, author=user, content="Comment 2", is_approved=False
-        )
-        Comment.objects.create(
-            post=blog_post, author=user, content="Comment 3", is_approved=True
-        )
+        Comment.objects.create(post=blog_post, author=user, content="Comment 1", is_approved=True)
+        Comment.objects.create(post=blog_post, author=user, content="Comment 2", is_approved=False)
+        Comment.objects.create(post=blog_post, author=user, content="Comment 3", is_approved=True)
 
         # Only approved comments should be counted
         assert blog_post.comment_count == 2
@@ -193,26 +181,20 @@ class TestCommentModel:
 
     def test_comment_str_method(self, blog_post, user):
         """Test the string representation of a comment."""
-        comment = Comment.objects.create(
-            post=blog_post, author=user, content="Test comment"
-        )
+        comment = Comment.objects.create(post=blog_post, author=user, content="Test comment")
 
         expected = f'Comment by {user.username} on "{blog_post.title}"'
         assert str(comment) == expected
 
     def test_comment_is_reply_false(self, blog_post, user):
         """Test is_reply property for top-level comment."""
-        comment = Comment.objects.create(
-            post=blog_post, author=user, content="Top level comment"
-        )
+        comment = Comment.objects.create(post=blog_post, author=user, content="Top level comment")
 
         assert comment.is_reply is False
 
     def test_comment_is_reply_true(self, blog_post, user):
         """Test is_reply property for reply comment."""
-        parent = Comment.objects.create(
-            post=blog_post, author=user, content="Parent comment"
-        )
+        parent = Comment.objects.create(post=blog_post, author=user, content="Parent comment")
         reply = Comment.objects.create(
             post=blog_post, author=user, content="Reply comment", parent=parent
         )
@@ -222,9 +204,7 @@ class TestCommentModel:
 
     def test_comment_replies_relationship(self, blog_post, user):
         """Test that replies are accessible from parent."""
-        parent = Comment.objects.create(
-            post=blog_post, author=user, content="Parent comment"
-        )
+        parent = Comment.objects.create(post=blog_post, author=user, content="Parent comment")
         reply1 = Comment.objects.create(
             post=blog_post, author=user, content="Reply 1", parent=parent
         )

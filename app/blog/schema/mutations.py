@@ -397,9 +397,7 @@ class CreateComment(graphene.Mutation):
         try:
             post = BlogPost.objects.get(pk=input.post_id)
         except BlogPost.DoesNotExist:
-            return CreateComment(
-                comment=None, success=False, errors=["Post not found."]
-            )
+            return CreateComment(comment=None, success=False, errors=["Post not found."])
 
         # Validate content
         if not input.content or len(input.content.strip()) == 0:
@@ -451,9 +449,7 @@ class UpdateComment(graphene.Mutation):
         try:
             comment = Comment.objects.get(pk=id)
         except Comment.DoesNotExist:
-            return UpdateComment(
-                comment=None, success=False, errors=["Comment not found."]
-            )
+            return UpdateComment(comment=None, success=False, errors=["Comment not found."])
 
         # Check ownership
         if comment.author != user:
@@ -543,9 +539,7 @@ class ApproveComment(graphene.Mutation):
         try:
             comment = Comment.objects.select_related("post__author__user").get(pk=id)
         except Comment.DoesNotExist:
-            return ApproveComment(
-                comment=None, success=False, errors=["Comment not found."]
-            )
+            return ApproveComment(comment=None, success=False, errors=["Comment not found."])
 
         # Check permissions: post author or staff
         is_post_author = comment.post.author.user == user

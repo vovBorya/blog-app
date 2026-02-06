@@ -39,9 +39,11 @@ jobs:
           pip install black==26.1.0 flake8 isort
 
       - name: Check code formatting with Black
+        working-directory: app
         run: black --check app/
 
       - name: Check import sorting with isort
+        working-directory: app
         run: isort --check-only app/
 
       - name: Lint with flake8

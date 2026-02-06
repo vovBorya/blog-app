@@ -98,8 +98,7 @@ class TestCreateAuthor:
 
         assert result.data["createAuthor"]["success"] is False
         assert (
-            "already have an author profile"
-            in str(result.data["createAuthor"]["errors"]).lower()
+            "already have an author profile" in str(result.data["createAuthor"]["errors"]).lower()
         )
 
     def test_create_author_unauthenticated(self):
@@ -119,9 +118,7 @@ class TestCreateAuthor:
         result = schema.execute(query, context_value=context)
 
         # Should fail due to login_required
-        assert (
-            result.errors is not None or result.data["createAuthor"]["success"] is False
-        )
+        assert result.errors is not None or result.data["createAuthor"]["success"] is False
 
 
 @pytest.mark.django_db
@@ -408,9 +405,7 @@ class TestCommentMutations:
 
     def test_delete_comment_as_author(self, user, blog_post):
         """Test deleting own comment."""
-        comment = Comment.objects.create(
-            post=blog_post, author=user, content="My comment"
-        )
+        comment = Comment.objects.create(post=blog_post, author=user, content="My comment")
 
         query = f"""
             mutation {{

@@ -41,9 +41,7 @@ def user():
 @pytest.fixture
 def author(user):
     """Create a test author."""
-    return Author.objects.create(
-        user=user, bio="Test bio", website="https://example.com"
-    )
+    return Author.objects.create(user=user, bio="Test bio", website="https://example.com")
 
 
 @pytest.fixture
@@ -102,10 +100,7 @@ class TestUpdateAuthorMutation:
         result = schema.execute(query, context_value=context)
 
         assert result.data["updateAuthor"]["success"] is False
-        assert (
-            "do not have an author profile"
-            in str(result.data["updateAuthor"]["errors"]).lower()
-        )
+        assert "do not have an author profile" in str(result.data["updateAuthor"]["errors"]).lower()
 
 
 @pytest.mark.django_db
@@ -188,9 +183,7 @@ class TestUpdateCommentMutation:
 
     def test_update_comment_success(self, user, blog_post):
         """Test successfully updating a comment."""
-        comment = Comment.objects.create(
-            post=blog_post, author=user, content="Original comment"
-        )
+        comment = Comment.objects.create(post=blog_post, author=user, content="Original comment")
 
         query = f"""
             mutation {{
@@ -238,9 +231,7 @@ class TestUpdateCommentMutation:
             email="other@example.com", username="otheruser", password="TestPass123!"
         )
 
-        comment = Comment.objects.create(
-            post=blog_post, author=other_user, content="Original"
-        )
+        comment = Comment.objects.create(post=blog_post, author=other_user, content="Original")
 
         query = f"""
             mutation {{
@@ -259,9 +250,7 @@ class TestUpdateCommentMutation:
 
     def test_update_comment_empty_content(self, user, blog_post):
         """Test updating comment with empty content."""
-        comment = Comment.objects.create(
-            post=blog_post, author=user, content="Original"
-        )
+        comment = Comment.objects.create(post=blog_post, author=user, content="Original")
 
         query = f"""
             mutation {{
@@ -280,9 +269,7 @@ class TestUpdateCommentMutation:
 
     def test_update_comment_too_long(self, user, blog_post):
         """Test updating comment with content too long."""
-        comment = Comment.objects.create(
-            post=blog_post, author=user, content="Original"
-        )
+        comment = Comment.objects.create(post=blog_post, author=user, content="Original")
 
         long_content = "x" * 2001  # Over 2000 char limit
 
@@ -347,9 +334,7 @@ class TestApproveCommentMutation:
             email="commenter@example.com", username="commenter", password="TestPass123!"
         )
 
-        comment = Comment.objects.create(
-            post=blog_post, author=commenter, content="Test comment"
-        )
+        comment = Comment.objects.create(post=blog_post, author=commenter, content="Test comment")
 
         query = f"""
             mutation {{
@@ -395,9 +380,7 @@ class TestDeleteCommentPermissions:
             email="commenter@example.com", username="commenter", password="TestPass123!"
         )
 
-        comment = Comment.objects.create(
-            post=blog_post, author=commenter, content="Test comment"
-        )
+        comment = Comment.objects.create(post=blog_post, author=commenter, content="Test comment")
 
         query = f"""
             mutation {{
@@ -595,9 +578,7 @@ class TestCreateCommentValidations:
             status=BlogPost.Status.PUBLISHED,
         )
 
-        parent_comment = Comment.objects.create(
-            post=post1, author=user, content="Parent"
-        )
+        parent_comment = Comment.objects.create(post=post1, author=user, content="Parent")
 
         query = f"""
             mutation {{
@@ -616,10 +597,7 @@ class TestCreateCommentValidations:
         result = schema.execute(query, context_value=context)
 
         assert result.data["createComment"]["success"] is False
-        assert (
-            "parent comment not found"
-            in str(result.data["createComment"]["errors"]).lower()
-        )
+        assert "parent comment not found" in str(result.data["createComment"]["errors"]).lower()
 
     def test_create_comment_too_long(self, user, author):
         """Test creating comment with content too long."""

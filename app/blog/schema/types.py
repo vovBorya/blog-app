@@ -88,9 +88,7 @@ class CommentType(DjangoObjectType):
     """
 
     author = graphene.Field(UserType, description="The user who wrote this comment")
-    is_reply = graphene.Boolean(
-        description="Whether this is a reply to another comment"
-    )
+    is_reply = graphene.Boolean(description="Whether this is a reply to another comment")
 
     class Meta:
         model = Comment

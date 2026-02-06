@@ -73,17 +73,13 @@ class Query(graphene.ObjectType):
         """
         if id:
             try:
-                return BlogPost.objects.select_related("author", "author__user").get(
-                    pk=id
-                )
+                return BlogPost.objects.select_related("author", "author__user").get(pk=id)
             except BlogPost.DoesNotExist:
                 return None
 
         if slug:
             try:
-                return BlogPost.objects.select_related("author", "author__user").get(
-                    slug=slug
-                )
+                return BlogPost.objects.select_related("author", "author__user").get(slug=slug)
             except BlogPost.DoesNotExist:
                 return None
 
@@ -103,17 +99,15 @@ class Query(graphene.ObjectType):
         except Comment.DoesNotExist:
             return None
 
-    def resolve_all_posts(
-        self, info, status=None, author_id=None, search=None, **kwargs
-    ):
+    def resolve_all_posts(self, info, status=None, author_id=None, search=None, **kwargs):
         """
         Resolve all blog posts with optional filtering.
 
         Optimizes queries with select_related and prefetch_related.
         """
-        queryset = BlogPost.objects.select_related(
-            "author", "author__user"
-        ).prefetch_related("comments")
+        queryset = BlogPost.objects.select_related("author", "author__user").prefetch_related(
+            "comments"
+        )
 
         if status:
             queryset = queryset.filter(status=status)
@@ -124,9 +118,7 @@ class Query(graphene.ObjectType):
         if search:
             from django.db.models import Q
 
-            queryset = queryset.filter(
-                Q(title__icontains=search) | Q(content__icontains=search)
-            )
+            queryset = queryset.filter(Q(title__icontains=search) | Q(content__icontains=search))
 
         return queryset
 
@@ -170,8 +162,6 @@ class Query(graphene.ObjectType):
         if search:
             from django.db.models import Q
 
-            queryset = queryset.filter(
-                Q(title__icontains=search) | Q(content__icontains=search)
-            )
+            queryset = queryset.filter(Q(title__icontains=search) | Q(content__icontains=search))
 
         return queryset

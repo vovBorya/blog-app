@@ -218,9 +218,7 @@ class ChangePassword(graphene.Mutation):
 
         # Verify current password
         if not user.check_password(current_password):
-            return ChangePassword(
-                success=False, errors=["Current password is incorrect."]
-            )
+            return ChangePassword(success=False, errors=["Current password is incorrect."])
 
         # Validate new password
         errors = []

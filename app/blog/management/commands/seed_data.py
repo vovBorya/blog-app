@@ -85,9 +85,7 @@ class Command(BaseCommand):
             # Create unique username and email
             first_name = fake.first_name()
             last_name = fake.last_name()
-            username = (
-                f"{first_name.lower()}{last_name.lower()}{random.randint(1, 999)}"
-            )
+            username = f"{first_name.lower()}{last_name.lower()}{random.randint(1, 999)}"
             email = f"{username}@example.com"
 
             # Skip if user already exists
@@ -126,9 +124,7 @@ class Command(BaseCommand):
             authors = list(Author.objects.all())
 
         if not authors:
-            self.stdout.write(
-                self.style.WARNING("No authors found. Cannot create posts.")
-            )
+            self.stdout.write(self.style.WARNING("No authors found. Cannot create posts."))
             return posts
 
         statuses = [BlogPost.Status.DRAFT, BlogPost.Status.PUBLISHED]
@@ -177,18 +173,14 @@ class Command(BaseCommand):
             posts = list(BlogPost.objects.filter(status=BlogPost.Status.PUBLISHED))
 
         if not posts:
-            self.stdout.write(
-                self.style.WARNING("No posts found. Cannot create comments.")
-            )
+            self.stdout.write(self.style.WARNING("No posts found. Cannot create comments."))
             return comments
 
         # Get all users for comment authors
         users = list(User.objects.filter(is_active=True))
 
         if not users:
-            self.stdout.write(
-                self.style.WARNING("No users found. Cannot create comments.")
-            )
+            self.stdout.write(self.style.WARNING("No users found. Cannot create comments."))
             return comments
 
         for i in range(count):
@@ -228,9 +220,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Users/Authors: {len(authors)}")
         self.stdout.write(f"Blog Posts: {len(posts)}")
 
-        published_posts = len(
-            [p for p in posts if p.status == BlogPost.Status.PUBLISHED]
-        )
+        published_posts = len([p for p in posts if p.status == BlogPost.Status.PUBLISHED])
         draft_posts = len(posts) - published_posts
         self.stdout.write(f"  - Published: {published_posts}")
         self.stdout.write(f"  - Drafts: {draft_posts}")
