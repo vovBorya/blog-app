@@ -4,4 +4,4 @@ from .mutations import Mutation
 from .queries import Query
 from .types import UserType
 
-__all__ = ['Query', 'Mutation', 'UserType']
+__all__ = ["Query", "Mutation", "UserType"]

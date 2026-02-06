@@ -15,19 +15,17 @@ from users.schema import Query as UserQuery
 class Query(UserQuery, BlogQuery, graphene.ObjectType):
     """
     Root Query class.
-    
+
     Combines all app-specific queries into a single GraphQL query.
     """
-    pass
 
 
 class Mutation(UserMutation, BlogMutation, graphene.ObjectType):
     """
     Root Mutation class.
-    
+
     Combines all app-specific mutations into a single GraphQL mutation.
     """
-    pass
 
 
 schema = graphene.Schema(

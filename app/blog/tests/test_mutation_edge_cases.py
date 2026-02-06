@@ -1,8 +1,9 @@
 """Additional tests to improve code coverage."""
 
+from unittest.mock import Mock
+
 import pytest
 from django.utils import timezone
-from unittest.mock import Mock
 
 from blog.models import Author, BlogPost, Comment
 from core.schema import schema
@@ -11,6 +12,7 @@ from core.schema import schema
 def get_user_model():
     """Lazy-load User model."""
     from django.contrib.auth import get_user_model as _get_user_model
+
     return _get_user_model()
 
 
@@ -28,11 +30,11 @@ def user():
     """Create a test user."""
     User = get_user_model()
     return User.objects.create_user(
-        email='test@example.com',
-        username='testuser',
-        password='TestPass123!',
-        first_name='Test',
-        last_name='User'
+        email="test@example.com",
+        username="testuser",
+        password="TestPass123!",
+        first_name="Test",
+        last_name="User",
     )
 
 
@@ -40,9 +42,7 @@ def user():
 def author(user):
     """Create a test author."""
     return Author.objects.create(
-        user=user,
-        bio='Test bio',
-        website='https://example.com'
+        user=user, bio="Test bio", website="https://example.com"
     )
 
 
@@ -50,10 +50,10 @@ def author(user):
 def blog_post(author):
     """Create a test blog post."""
     return BlogPost.objects.create(
-        title='Test Post',
-        content='Test content.',
+        title="Test Post",
+        content="Test content.",
         author=author,
-        status=BlogPost.Status.DRAFT
+        status=BlogPost.Status.DRAFT,
     )
 
 
@@ -63,7 +63,7 @@ class TestUpdateAuthorMutation:
 
     def test_update_author_success(self, author):
         """Test successfully updating author profile."""
-        query = '''
+        query = """
             mutation {
                 updateAuthor(
                     bio: "Updated bio"
@@ -77,32 +77,35 @@ class TestUpdateAuthorMutation:
                     }
                 }
             }
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
         assert result.errors is None
-        assert result.data['updateAuthor']['success'] is True
-        assert result.data['updateAuthor']['author']['bio'] == 'Updated bio'
-        assert result.data['updateAuthor']['author']['website'] == 'https://newsite.com'
+        assert result.data["updateAuthor"]["success"] is True
+        assert result.data["updateAuthor"]["author"]["bio"] == "Updated bio"
+        assert result.data["updateAuthor"]["author"]["website"] == "https://newsite.com"
 
     def test_update_author_no_profile(self, user):
         """Test updating when no author profile exists."""
-        query = '''
+        query = """
             mutation {
                 updateAuthor(bio: "New bio") {
                     success
                     errors
                 }
             }
-        '''
+        """
 
         context = create_context(user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['updateAuthor']['success'] is False
-        assert 'do not have an author profile' in str(result.data['updateAuthor']['errors']).lower()
+        assert result.data["updateAuthor"]["success"] is False
+        assert (
+            "do not have an author profile"
+            in str(result.data["updateAuthor"]["errors"]).lower()
+        )
 
 
 @pytest.mark.django_db
@@ -113,14 +116,14 @@ class TestUnpublishPostMutation:
         """Test successfully unpublishing a post."""
         # Create a published post
         post = BlogPost.objects.create(
-            title='Published Post',
-            content='Content',
+            title="Published Post",
+            content="Content",
             author=author,
             status=BlogPost.Status.PUBLISHED,
-            published_at=timezone.now()
+            published_at=timezone.now(),
         )
 
-        query = f'''
+        query = f"""
             mutation {{
                 unpublishPost(id: "{post.id}") {{
                     success
@@ -130,55 +133,53 @@ class TestUnpublishPostMutation:
                     }}
                 }}
             }}
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
         assert result.errors is None
-        assert result.data['unpublishPost']['success'] is True
-        assert result.data['unpublishPost']['post']['status'] == 'draft'
+        assert result.data["unpublishPost"]["success"] is True
+        assert result.data["unpublishPost"]["post"]["status"] == "draft"
 
     def test_unpublish_post_not_found(self, author):
         """Test unpublishing non-existent post."""
-        query = '''
+        query = """
             mutation {
                 unpublishPost(id: "99999") {
                     success
                     errors
                 }
             }
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['unpublishPost']['success'] is False
-        assert 'not found' in str(result.data['unpublishPost']['errors']).lower()
+        assert result.data["unpublishPost"]["success"] is False
+        assert "not found" in str(result.data["unpublishPost"]["errors"]).lower()
 
     def test_unpublish_post_no_permission(self, blog_post):
         """Test unpublishing post without permission."""
         User = get_user_model()
         other_user = User.objects.create_user(
-            email='other@example.com',
-            username='otheruser',
-            password='TestPass123!'
+            email="other@example.com", username="otheruser", password="TestPass123!"
         )
 
-        query = f'''
+        query = f"""
             mutation {{
                 unpublishPost(id: "{blog_post.id}") {{
                     success
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(other_user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['unpublishPost']['success'] is False
-        assert 'permission' in str(result.data['unpublishPost']['errors']).lower()
+        assert result.data["unpublishPost"]["success"] is False
+        assert "permission" in str(result.data["unpublishPost"]["errors"]).lower()
 
 
 @pytest.mark.django_db
@@ -188,12 +189,10 @@ class TestUpdateCommentMutation:
     def test_update_comment_success(self, user, blog_post):
         """Test successfully updating a comment."""
         comment = Comment.objects.create(
-            post=blog_post,
-            author=user,
-            content='Original comment'
+            post=blog_post, author=user, content="Original comment"
         )
 
-        query = f'''
+        query = f"""
             mutation {{
                 updateComment(
                     id: "{comment.id}"
@@ -206,109 +205,101 @@ class TestUpdateCommentMutation:
                     }}
                 }}
             }}
-        '''
+        """
 
         context = create_context(user)
         result = schema.execute(query, context_value=context)
 
         assert result.errors is None
-        assert result.data['updateComment']['success'] is True
-        assert result.data['updateComment']['comment']['content'] == 'Updated comment'
+        assert result.data["updateComment"]["success"] is True
+        assert result.data["updateComment"]["comment"]["content"] == "Updated comment"
 
     def test_update_comment_not_found(self, user):
         """Test updating non-existent comment."""
-        query = '''
+        query = """
             mutation {
                 updateComment(id: "99999" content: "New") {
                     success
                     errors
                 }
             }
-        '''
+        """
 
         context = create_context(user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['updateComment']['success'] is False
-        assert 'not found' in str(result.data['updateComment']['errors']).lower()
+        assert result.data["updateComment"]["success"] is False
+        assert "not found" in str(result.data["updateComment"]["errors"]).lower()
 
     def test_update_comment_not_owner(self, user, blog_post):
         """Test updating comment as non-owner."""
         User = get_user_model()
         other_user = User.objects.create_user(
-            email='other@example.com',
-            username='otheruser',
-            password='TestPass123!'
+            email="other@example.com", username="otheruser", password="TestPass123!"
         )
 
         comment = Comment.objects.create(
-            post=blog_post,
-            author=other_user,
-            content='Original'
+            post=blog_post, author=other_user, content="Original"
         )
 
-        query = f'''
+        query = f"""
             mutation {{
                 updateComment(id: "{comment.id}" content: "Hacked") {{
                     success
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['updateComment']['success'] is False
-        assert 'your own' in str(result.data['updateComment']['errors']).lower()
+        assert result.data["updateComment"]["success"] is False
+        assert "your own" in str(result.data["updateComment"]["errors"]).lower()
 
     def test_update_comment_empty_content(self, user, blog_post):
         """Test updating comment with empty content."""
         comment = Comment.objects.create(
-            post=blog_post,
-            author=user,
-            content='Original'
+            post=blog_post, author=user, content="Original"
         )
 
-        query = f'''
+        query = f"""
             mutation {{
                 updateComment(id: "{comment.id}" content: "") {{
                     success
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['updateComment']['success'] is False
-        assert 'required' in str(result.data['updateComment']['errors']).lower()
+        assert result.data["updateComment"]["success"] is False
+        assert "required" in str(result.data["updateComment"]["errors"]).lower()
 
     def test_update_comment_too_long(self, user, blog_post):
         """Test updating comment with content too long."""
         comment = Comment.objects.create(
-            post=blog_post,
-            author=user,
-            content='Original'
+            post=blog_post, author=user, content="Original"
         )
 
-        long_content = 'x' * 2001  # Over 2000 char limit
+        long_content = "x" * 2001  # Over 2000 char limit
 
-        query = f'''
+        query = f"""
             mutation {{
                 updateComment(id: "{comment.id}" content: "{long_content}") {{
                     success
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['updateComment']['success'] is False
-        assert '2000' in str(result.data['updateComment']['errors'])
+        assert result.data["updateComment"]["success"] is False
+        assert "2000" in str(result.data["updateComment"]["errors"])
 
 
 @pytest.mark.django_db
@@ -319,19 +310,14 @@ class TestApproveCommentMutation:
         """Test approving comment as post author."""
         User = get_user_model()
         commenter = User.objects.create_user(
-            email='commenter@example.com',
-            username='commenter',
-            password='TestPass123!'
+            email="commenter@example.com", username="commenter", password="TestPass123!"
         )
 
         comment = Comment.objects.create(
-            post=blog_post,
-            author=commenter,
-            content='Test comment',
-            is_approved=False
+            post=blog_post, author=commenter, content="Test comment", is_approved=False
         )
 
-        query = f'''
+        query = f"""
             mutation {{
                 approveComment(id: "{comment.id}" isApproved: true) {{
                     success
@@ -341,67 +327,61 @@ class TestApproveCommentMutation:
                     }}
                 }}
             }}
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
         assert result.errors is None
-        assert result.data['approveComment']['success'] is True
-        assert result.data['approveComment']['comment']['isApproved'] is True
+        assert result.data["approveComment"]["success"] is True
+        assert result.data["approveComment"]["comment"]["isApproved"] is True
 
     def test_approve_comment_no_permission(self, blog_post):
         """Test approving comment without permission."""
         User = get_user_model()
         random_user = User.objects.create_user(
-            email='random@example.com',
-            username='randomuser',
-            password='TestPass123!'
+            email="random@example.com", username="randomuser", password="TestPass123!"
         )
-        
+
         commenter = User.objects.create_user(
-            email='commenter@example.com',
-            username='commenter',
-            password='TestPass123!'
+            email="commenter@example.com", username="commenter", password="TestPass123!"
         )
 
         comment = Comment.objects.create(
-            post=blog_post,
-            author=commenter,
-            content='Test comment'
+            post=blog_post, author=commenter, content="Test comment"
         )
 
-        query = f'''
+        query = f"""
             mutation {{
                 approveComment(id: "{comment.id}" isApproved: false) {{
                     success
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(random_user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['approveComment']['success'] is False
-        assert 'permission' in str(result.data['approveComment']['errors']).lower()
+        assert result.data["approveComment"]["success"] is False
+        assert "permission" in str(result.data["approveComment"]["errors"]).lower()
 
     def test_approve_comment_not_found(self, author):
         """Test approving non-existent comment."""
-        query = '''
+        query = """
             mutation {
                 approveComment(id: "99999" isApproved: true) {
                     success
                     errors
                 }
             }
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['approveComment']['success'] is False
-        assert 'not found' in str(result.data['approveComment']['errors']).lower()
+        assert result.data["approveComment"]["success"] is False
+        assert "not found" in str(result.data["approveComment"]["errors"]).lower()
 
 
 @pytest.mark.django_db
@@ -412,31 +392,27 @@ class TestDeleteCommentPermissions:
         """Test deleting comment as post author."""
         User = get_user_model()
         commenter = User.objects.create_user(
-            email='commenter@example.com',
-            username='commenter',
-            password='TestPass123!'
+            email="commenter@example.com", username="commenter", password="TestPass123!"
         )
 
         comment = Comment.objects.create(
-            post=blog_post,
-            author=commenter,
-            content='Test comment'
+            post=blog_post, author=commenter, content="Test comment"
         )
 
-        query = f'''
+        query = f"""
             mutation {{
                 deleteComment(id: "{comment.id}") {{
                     success
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
         assert result.errors is None
-        assert result.data['deleteComment']['success'] is True
+        assert result.data["deleteComment"]["success"] is True
 
 
 @pytest.mark.django_db
@@ -445,9 +421,9 @@ class TestCreatePostValidations:
 
     def test_create_post_title_too_long(self, author):
         """Test creating post with title too long."""
-        long_title = 'x' * 201  # Over 200 char limit
+        long_title = "x" * 201  # Over 200 char limit
 
-        query = f'''
+        query = f"""
             mutation {{
                 createPost(input: {{
                     title: "{long_title}"
@@ -457,17 +433,17 @@ class TestCreatePostValidations:
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['createPost']['success'] is False
-        assert '200' in str(result.data['createPost']['errors'])
+        assert result.data["createPost"]["success"] is False
+        assert "200" in str(result.data["createPost"]["errors"])
 
     def test_create_post_invalid_status(self, author):
         """Test creating post with invalid status."""
-        query = '''
+        query = """
             mutation {
                 createPost(input: {
                     title: "Test"
@@ -478,13 +454,13 @@ class TestCreatePostValidations:
                     errors
                 }
             }
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['createPost']['success'] is False
-        assert 'status' in str(result.data['createPost']['errors']).lower()
+        assert result.data["createPost"]["success"] is False
+        assert "status" in str(result.data["createPost"]["errors"]).lower()
 
 
 @pytest.mark.django_db
@@ -493,9 +469,9 @@ class TestUpdatePostValidations:
 
     def test_update_post_title_too_long(self, author, blog_post):
         """Test updating post with title too long."""
-        long_title = 'x' * 201
+        long_title = "x" * 201
 
-        query = f'''
+        query = f"""
             mutation {{
                 updatePost(
                     id: "{blog_post.id}"
@@ -507,17 +483,17 @@ class TestUpdatePostValidations:
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['updatePost']['success'] is False
-        assert '200' in str(result.data['updatePost']['errors'])
+        assert result.data["updatePost"]["success"] is False
+        assert "200" in str(result.data["updatePost"]["errors"])
 
     def test_update_post_empty_content(self, author, blog_post):
         """Test updating post with empty content."""
-        query = f'''
+        query = f"""
             mutation {{
                 updatePost(
                     id: "{blog_post.id}"
@@ -529,17 +505,17 @@ class TestUpdatePostValidations:
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['updatePost']['success'] is False
-        assert 'content' in str(result.data['updatePost']['errors']).lower()
+        assert result.data["updatePost"]["success"] is False
+        assert "content" in str(result.data["updatePost"]["errors"]).lower()
 
     def test_update_post_invalid_status(self, author, blog_post):
         """Test updating post with invalid status."""
-        query = f'''
+        query = f"""
             mutation {{
                 updatePost(
                     id: "{blog_post.id}"
@@ -551,13 +527,13 @@ class TestUpdatePostValidations:
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(author.user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['updatePost']['success'] is False
-        assert 'status' in str(result.data['updatePost']['errors']).lower()
+        assert result.data["updatePost"]["success"] is False
+        assert "status" in str(result.data["updatePost"]["errors"]).lower()
 
 
 @pytest.mark.django_db
@@ -567,10 +543,7 @@ class TestBlogPostSaveMethod:
     def test_auto_publish_date_on_first_publish(self, author):
         """Test that published_at is set automatically."""
         post = BlogPost.objects.create(
-            title='Test',
-            content='Content',
-            author=author,
-            status=BlogPost.Status.DRAFT
+            title="Test", content="Content", author=author, status=BlogPost.Status.DRAFT
         )
 
         assert post.published_at is None
@@ -587,15 +560,15 @@ class TestBlogPostSaveMethod:
         """Test that published_at is not changed on re-saving."""
         original_time = timezone.now()
         post = BlogPost.objects.create(
-            title='Test',
-            content='Content',
+            title="Test",
+            content="Content",
             author=author,
             status=BlogPost.Status.PUBLISHED,
-            published_at=original_time
+            published_at=original_time,
         )
 
         # Update something else
-        post.content = 'New content'
+        post.content = "New content"
         post.save()
 
         post.refresh_from_db()
@@ -609,26 +582,24 @@ class TestCreateCommentValidations:
     def test_create_comment_with_invalid_parent(self, user, author):
         """Test creating comment with parent from different post."""
         post1 = BlogPost.objects.create(
-            title='Post 1',
-            content='Content',
+            title="Post 1",
+            content="Content",
             author=author,
-            status=BlogPost.Status.PUBLISHED
+            status=BlogPost.Status.PUBLISHED,
         )
 
         post2 = BlogPost.objects.create(
-            title='Post 2',
-            content='Content',
+            title="Post 2",
+            content="Content",
             author=author,
-            status=BlogPost.Status.PUBLISHED
+            status=BlogPost.Status.PUBLISHED,
         )
 
         parent_comment = Comment.objects.create(
-            post=post1,
-            author=user,
-            content='Parent'
+            post=post1, author=user, content="Parent"
         )
 
-        query = f'''
+        query = f"""
             mutation {{
                 createComment(input: {{
                     postId: "{post2.id}"
@@ -639,26 +610,29 @@ class TestCreateCommentValidations:
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['createComment']['success'] is False
-        assert 'parent comment not found' in str(result.data['createComment']['errors']).lower()
+        assert result.data["createComment"]["success"] is False
+        assert (
+            "parent comment not found"
+            in str(result.data["createComment"]["errors"]).lower()
+        )
 
     def test_create_comment_too_long(self, user, author):
         """Test creating comment with content too long."""
         post = BlogPost.objects.create(
-            title='Test',
-            content='Content',
+            title="Test",
+            content="Content",
             author=author,
-            status=BlogPost.Status.PUBLISHED
+            status=BlogPost.Status.PUBLISHED,
         )
 
-        long_content = 'x' * 2001
+        long_content = "x" * 2001
 
-        query = f'''
+        query = f"""
             mutation {{
                 createComment(input: {{
                     postId: "{post.id}"
@@ -668,10 +642,10 @@ class TestCreateCommentValidations:
                     errors
                 }}
             }}
-        '''
+        """
 
         context = create_context(user)
         result = schema.execute(query, context_value=context)
 
-        assert result.data['createComment']['success'] is False
-        assert '2000' in str(result.data['createComment']['errors'])
+        assert result.data["createComment"]["success"] is False
+        assert "2000" in str(result.data["createComment"]["errors"])
