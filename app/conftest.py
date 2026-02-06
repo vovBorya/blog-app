@@ -6,9 +6,12 @@ available to all test files.
 """
 
 import pytest
-from django.contrib.auth import get_user_model
 
-User = get_user_model()
+
+def get_user_model():
+    """Lazy-load User model to avoid Django configuration issues at import time."""
+    from django.contrib.auth import get_user_model as _get_user_model
+    return _get_user_model()
 
 
 @pytest.fixture
@@ -34,6 +37,7 @@ def create_user():
         password='TestPass123!',
         **kwargs
     ):
+        User = get_user_model()
         return User.objects.create_user(
             email=email,
             username=username,
@@ -63,6 +67,7 @@ def staff_user(create_user):
 @pytest.fixture
 def superuser():
     """Create and return a superuser."""
+    User = get_user_model()
     return User.objects.create_superuser(
         email='admin@example.com',
         username='admin',

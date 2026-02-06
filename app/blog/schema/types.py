@@ -46,6 +46,7 @@ class BlogPostType(DjangoObjectType):
     
     comment_count = graphene.Int(description='Number of approved comments')
     author = graphene.Field(AuthorType, description='The author of this post')
+    status = graphene.String(description='Publication status of the post')
     
     class Meta:
         model = BlogPost
@@ -56,7 +57,6 @@ class BlogPostType(DjangoObjectType):
             'content',
             'excerpt',
             'author',
-            'status',
             'featured_image_url',
             'published_at',
             'created_at',
@@ -74,6 +74,10 @@ class BlogPostType(DjangoObjectType):
     def resolve_comment_count(self, info):
         """Resolve the number of approved comments."""
         return self.comment_count
+    
+    def resolve_status(self, info):
+        """Return the lowercase status value."""
+        return self.status
 
 
 class CommentType(DjangoObjectType):

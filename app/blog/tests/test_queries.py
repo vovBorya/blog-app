@@ -1,19 +1,23 @@
 """Tests for blog GraphQL queries."""
 
 import pytest
-from django.contrib.auth import get_user_model
 from django.utils import timezone
 from unittest.mock import Mock
 
 from blog.models import Author, BlogPost, Comment
 from core.schema import schema
 
-User = get_user_model()
+
+def get_user_model():
+    """Lazy-load User model to avoid Django configuration issues at import time."""
+    from django.contrib.auth import get_user_model as _get_user_model
+    return _get_user_model()
 
 
 @pytest.fixture
 def user():
     """Create a test user."""
+    User = get_user_model()
     return User.objects.create_user(
         email='test@example.com',
         username='testuser',
@@ -56,7 +60,7 @@ def draft_post(author):
 @pytest.mark.django_db
 class TestPostQueries:
     """Test cases for blog post queries."""
-    
+
     def test_query_post_by_id(self, published_post):
         """Test querying a post by ID."""
         query = f'''
@@ -69,13 +73,13 @@ class TestPostQueries:
                 }}
             }}
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         assert result.data['post']['title'] == 'Published Post'
         assert result.data['post']['status'] == 'published'
-    
+
     def test_query_post_by_slug(self, published_post):
         """Test querying a post by slug."""
         query = f'''
@@ -87,13 +91,13 @@ class TestPostQueries:
                 }}
             }}
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         assert result.data['post']['title'] == 'Published Post'
         assert result.data['post']['slug'] == published_post.slug
-    
+
     def test_query_nonexistent_post(self):
         """Test querying a post that doesn't exist."""
         query = '''
@@ -104,12 +108,12 @@ class TestPostQueries:
                 }
             }
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         assert result.data['post'] is None
-    
+
     def test_query_published_posts(self, published_post, draft_post):
         """Test querying only published posts."""
         query = '''
@@ -125,17 +129,17 @@ class TestPostQueries:
                 }
             }
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         posts = result.data['publishedPosts']['edges']
-        
+
         # Should only contain published posts
         titles = [p['node']['title'] for p in posts]
         assert 'Published Post' in titles
         assert 'Draft Post' not in titles
-    
+
     def test_query_all_posts_with_status_filter(self, published_post, draft_post):
         """Test filtering posts by status."""
         query = '''
@@ -150,15 +154,15 @@ class TestPostQueries:
                 }
             }
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         posts = result.data['allPosts']['edges']
-        
+
         for post in posts:
             assert post['node']['status'] == 'draft'
-    
+
     def test_query_posts_with_search(self, author):
         """Test searching posts by title and content."""
         # Create posts with specific content
@@ -174,7 +178,7 @@ class TestPostQueries:
             author=author,
             status=BlogPost.Status.PUBLISHED
         )
-        
+
         query = '''
             query {
                 publishedPosts(search: "Python") {
@@ -186,9 +190,9 @@ class TestPostQueries:
                 }
             }
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         posts = result.data['publishedPosts']['edges']
         assert len(posts) == 1
@@ -198,7 +202,7 @@ class TestPostQueries:
 @pytest.mark.django_db
 class TestAuthorQueries:
     """Test cases for author queries."""
-    
+
     def test_query_author_by_id(self, author):
         """Test querying an author by ID."""
         query = f'''
@@ -212,13 +216,13 @@ class TestAuthorQueries:
                 }}
             }}
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         assert result.data['author']['bio'] == 'Test bio'
         assert result.data['author']['user']['username'] == 'testuser'
-    
+
     def test_query_all_authors(self, author):
         """Test querying all authors."""
         query = '''
@@ -233,12 +237,12 @@ class TestAuthorQueries:
                 }
             }
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         assert len(result.data['allAuthors']['edges']) >= 1
-    
+
     def test_query_author_with_post_count(self, author, published_post, draft_post):
         """Test author post count includes only published posts."""
         query = f'''
@@ -249,9 +253,9 @@ class TestAuthorQueries:
                 }}
             }}
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         # Should only count the published post
         assert result.data['author']['postCount'] == 1
@@ -260,7 +264,7 @@ class TestAuthorQueries:
 @pytest.mark.django_db
 class TestCommentQueries:
     """Test cases for comment queries."""
-    
+
     def test_query_comments_by_post(self, published_post, user):
         """Test querying comments for a specific post."""
         # Create comments
@@ -274,7 +278,7 @@ class TestCommentQueries:
             author=user,
             content='Comment 2'
         )
-        
+
         query = f'''
             query {{
                 allComments(postId: "{published_post.id}") {{
@@ -289,13 +293,13 @@ class TestCommentQueries:
                 }}
             }}
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         comments = result.data['allComments']['edges']
         assert len(comments) == 2
-    
+
     def test_query_approved_comments_only(self, published_post, user):
         """Test filtering comments by approval status."""
         Comment.objects.create(
@@ -310,7 +314,7 @@ class TestCommentQueries:
             content='Not Approved',
             is_approved=False
         )
-        
+
         query = '''
             query {
                 allComments(isApproved: true) {
@@ -323,11 +327,11 @@ class TestCommentQueries:
                 }
             }
         '''
-        
+
         result = schema.execute(query)
-        
+
         assert result.errors is None
         comments = result.data['allComments']['edges']
-        
+
         for comment in comments:
             assert comment['node']['isApproved'] is True

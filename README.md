@@ -54,7 +54,7 @@ docker-compose up --build
 docker-compose exec web python manage.py migrate
 ```
 
-5. Create a superuser (optional):
+5. Create a superuser (optional), used in admin app:
 ```bash
 docker-compose exec web python manage.py createsuperuser
 ```
