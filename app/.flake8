@@ -1,0 +1,7 @@
+[flake8]
+# Match black's line length
+max-line-length = 100
+# Ignore errors that conflict with black
+extend-ignore = E203
+# Exclude standard folders
+exclude = .git,__pycache__,docs/source/conf.py,old,build,dist,migrations

@@ -1,0 +1,720 @@
+# ===========================================
+# Blog API - GraphQL Examples
+# ===========================================
+# This file contains example GraphQL queries and mutations
+# for all available operations in the Blog API.
+# ===========================================
+
+# -------------------------------------------
+# AUTHENTICATION
+# -------------------------------------------
+
+# Sign Up - Register a new user
+mutation SignUp {
+  signUp(input: {
+    email: "user@example.com"
+    username: "johndoe"
+    password: "SecurePass123!"
+    firstName: "John"
+    lastName: "Doe"
+  }) {
+    success
+    errors
+    user {
+      id
+      email
+      username
+      firstName
+      lastName
+    }
+    token
+  }
+}
+
+# Sign In - Login with email and password
+mutation SignIn {
+  signIn(input: {
+    email: "user@example.com"
+    password: "SecurePass123!"
+  }) {
+    success
+    errors
+    user {
+      id
+      email
+      username
+    }
+    token
+  }
+}
+
+# Token Auth - Alternative login using graphql_jwt
+mutation TokenAuth {
+  tokenAuth(username: "johndoe", password: "SecurePass123!") {
+    token
+    payload
+    refreshExpiresIn
+  }
+}
+
+# Verify Token - Check if a token is valid
+mutation VerifyToken {
+  verifyToken(token: "your-jwt-token-here") {
+    payload
+  }
+}
+
+# Refresh Token - Get a new access token
+mutation RefreshToken {
+  refreshToken(token: "your-jwt-token-here") {
+    token
+    payload
+    refreshExpiresIn
+  }
+}
+
+# Get Current User - Requires authentication
+query Me {
+  me {
+    id
+    email
+    username
+    firstName
+    lastName
+    fullName
+    bio
+    avatarUrl
+    dateJoined
+    isActive
+  }
+}
+
+# Update Profile - Update current user's profile
+mutation UpdateProfile {
+  updateProfile(
+    firstName: "John"
+    lastName: "Smith"
+    bio: "Software developer and writer"
+    avatarUrl: "https://example.com/avatar.jpg"
+  ) {
+    success
+    errors
+    user {
+      id
+      firstName
+      lastName
+      bio
+      avatarUrl
+    }
+  }
+}
+
+# Change Password - Change current user's password
+mutation ChangePassword {
+  changePassword(
+    currentPassword: "SecurePass123!"
+    newPassword: "NewSecurePass456!"
+  ) {
+    success
+    errors
+  }
+}
+
+# -------------------------------------------
+# AUTHOR OPERATIONS
+# -------------------------------------------
+
+# Create Author Profile - Create an author profile for current user
+mutation CreateAuthor {
+  createAuthor(input: {
+    bio: "Tech blogger and developer with 10 years of experience"
+    avatarUrl: "https://example.com/author-avatar.jpg"
+    website: "https://johndoe.dev"
+  }) {
+    success
+    errors
+    author {
+      id
+      bio
+      avatarUrl
+      website
+      user {
+        username
+        email
+      }
+    }
+  }
+}
+
+# Update Author Profile
+mutation UpdateAuthor {
+  updateAuthor(
+    bio: "Updated bio text"
+    website: "https://newwebsite.com"
+  ) {
+    success
+    errors
+    author {
+      id
+      bio
+      website
+      updatedAt
+    }
+  }
+}
+
+# Get Author by ID
+query GetAuthor {
+  author(id: "1") {
+    id
+    bio
+    avatarUrl
+    website
+    postCount
+    createdAt
+    user {
+      username
+      fullName
+      email
+    }
+  }
+}
+
+# Get All Authors with pagination
+query AllAuthors {
+  allAuthors(first: 10) {
+    edges {
+      node {
+        id
+        bio
+        postCount
+        user {
+          username
+          fullName
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+  }
+}
+
+# -------------------------------------------
+# BLOG POST OPERATIONS
+# -------------------------------------------
+
+# Create a Blog Post
+mutation CreatePost {
+  createPost(input: {
+    title: "Getting Started with GraphQL"
+    content: """
+    GraphQL is a query language for APIs that provides a complete 
+    and understandable description of the data in your API.
+    
+    ## Why GraphQL?
+    
+    1. Get exactly what you need
+    2. Get many resources in a single request
+    3. Describe what's possible with a type system
+    
+    ## Getting Started
+    
+    First, you'll need to set up your server...
+    """
+    excerpt: "Learn the basics of GraphQL and why it's becoming the preferred choice for API development."
+    status: "draft"
+    featuredImageUrl: "https://example.com/graphql-image.jpg"
+  }) {
+    success
+    errors
+    post {
+      id
+      title
+      slug
+      content
+      excerpt
+      status
+      featuredImageUrl
+      createdAt
+      author {
+        user {
+          username
+        }
+      }
+    }
+  }
+}
+
+# Update a Blog Post
+mutation UpdatePost {
+  updatePost(
+    id: "1"
+    input: {
+      title: "Updated: Getting Started with GraphQL"
+      content: "Updated content..."
+      status: "published"
+    }
+  ) {
+    success
+    errors
+    post {
+      id
+      title
+      slug
+      status
+      updatedAt
+    }
+  }
+}
+
+# Publish a Blog Post
+mutation PublishPost {
+  publishPost(id: "1") {
+    success
+    errors
+    post {
+      id
+      title
+      status
+      publishedAt
+    }
+  }
+}
+
+# Unpublish a Blog Post
+mutation UnpublishPost {
+  unpublishPost(id: "1") {
+    success
+    errors
+    post {
+      id
+      title
+      status
+    }
+  }
+}
+
+# Delete a Blog Post
+mutation DeletePost {
+  deletePost(id: "1") {
+    success
+    errors
+  }
+}
+
+# Get Single Post by ID
+query GetPostById {
+  post(id: "1") {
+    id
+    title
+    slug
+    content
+    excerpt
+    status
+    featuredImageUrl
+    publishedAt
+    createdAt
+    updatedAt
+    commentCount
+    author {
+      id
+      bio
+      user {
+        username
+        fullName
+      }
+    }
+  }
+}
+
+# Get Single Post by Slug
+query GetPostBySlug {
+  post(slug: "getting-started-with-graphql") {
+    id
+    title
+    content
+    author {
+      user {
+        username
+      }
+    }
+  }
+}
+
+# Get All Posts (admin/authenticated view)
+query AllPosts {
+  allPosts(first: 10, status: "published", search: "graphql") {
+    edges {
+      node {
+        id
+        title
+        slug
+        excerpt
+        status
+        publishedAt
+        commentCount
+        author {
+          user {
+            username
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+# Get Published Posts Only (public view)
+query PublishedPosts {
+  publishedPosts(first: 10) {
+    edges {
+      node {
+        id
+        title
+        slug
+        excerpt
+        publishedAt
+        commentCount
+        author {
+          bio
+          user {
+            username
+            fullName
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+# Search Published Posts
+query SearchPosts {
+  publishedPosts(first: 10, search: "python programming") {
+    edges {
+      node {
+        id
+        title
+        slug
+        excerpt
+      }
+    }
+  }
+}
+
+# Filter Posts by Author
+query PostsByAuthor {
+  publishedPosts(first: 10, authorId: "1") {
+    edges {
+      node {
+        id
+        title
+        publishedAt
+      }
+    }
+  }
+}
+
+# Pagination Example - Get Next Page
+query NextPagePosts {
+  publishedPosts(first: 10, after: "YXJyYXljb25uZWN0aW9uOjk=") {
+    edges {
+      node {
+        id
+        title
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+# -------------------------------------------
+# COMMENT OPERATIONS
+# -------------------------------------------
+
+# Create a Comment
+mutation CreateComment {
+  createComment(input: {
+    postId: "1"
+    content: "Great article! This really helped me understand GraphQL better."
+  }) {
+    success
+    errors
+    comment {
+      id
+      content
+      createdAt
+      isApproved
+      author {
+        username
+        fullName
+      }
+    }
+  }
+}
+
+# Create a Reply to a Comment
+mutation CreateReply {
+  createComment(input: {
+    postId: "1"
+    content: "Thanks for your feedback! Glad it was helpful."
+    parentId: "5"
+  }) {
+    success
+    errors
+    comment {
+      id
+      content
+      isReply
+      parent {
+        id
+        content
+      }
+    }
+  }
+}
+
+# Update a Comment
+mutation UpdateComment {
+  updateComment(
+    id: "1"
+    content: "Updated comment content with more details."
+  ) {
+    success
+    errors
+    comment {
+      id
+      content
+      updatedAt
+    }
+  }
+}
+
+# Delete a Comment
+mutation DeleteComment {
+  deleteComment(id: "1") {
+    success
+    errors
+  }
+}
+
+# Approve/Disapprove a Comment (post owner or admin)
+mutation ApproveComment {
+  approveComment(id: "1", isApproved: true) {
+    success
+    errors
+    comment {
+      id
+      isApproved
+    }
+  }
+}
+
+# Get Comment by ID
+query GetComment {
+  comment(id: "1") {
+    id
+    content
+    isApproved
+    isReply
+    createdAt
+    author {
+      username
+    }
+    post {
+      title
+    }
+    parent {
+      id
+      content
+    }
+    replies {
+      id
+      content
+      author {
+        username
+      }
+    }
+  }
+}
+
+# Get All Comments for a Post
+query CommentsForPost {
+  allComments(postId: "1", isApproved: true, first: 20) {
+    edges {
+      node {
+        id
+        content
+        isReply
+        createdAt
+        author {
+          username
+          avatarUrl
+        }
+        replies {
+          id
+          content
+          author {
+            username
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+# -------------------------------------------
+# ADMIN QUERIES (Staff Only)
+# -------------------------------------------
+
+# Get User by ID (admin only)
+query GetUser {
+  user(id: "1") {
+    id
+    email
+    username
+    firstName
+    lastName
+    isActive
+    isStaff
+    dateJoined
+  }
+}
+
+# Get All Users (admin only)
+query AllUsers {
+  users {
+    id
+    email
+    username
+    isActive
+    dateJoined
+  }
+}
+
+# -------------------------------------------
+# COMPLEX QUERIES
+# -------------------------------------------
+
+# Get Post with All Related Data
+query PostWithDetails {
+  post(slug: "getting-started-with-graphql") {
+    id
+    title
+    slug
+    content
+    excerpt
+    status
+    featuredImageUrl
+    publishedAt
+    createdAt
+    updatedAt
+    commentCount
+    author {
+      id
+      bio
+      avatarUrl
+      website
+      postCount
+      user {
+        id
+        username
+        fullName
+        email
+      }
+    }
+  }
+}
+
+# Get Comments with Nested Replies for a Post
+query CommentsWithReplies {
+  allComments(postId: "1", isApproved: true) {
+    edges {
+      node {
+        id
+        content
+        createdAt
+        isReply
+        author {
+          username
+          avatarUrl
+        }
+        replies {
+          id
+          content
+          createdAt
+          author {
+            username
+          }
+        }
+      }
+    }
+  }
+}
+
+# -------------------------------------------
+# ERROR HANDLING EXAMPLES
+# -------------------------------------------
+
+# Sign Up with Invalid Data (will return errors)
+mutation SignUpInvalid {
+  signUp(input: {
+    email: "invalid-email"
+    username: "ab"
+    password: "123"
+  }) {
+    success
+    errors
+    user {
+      id
+    }
+    token
+  }
+}
+
+# Create Post Without Author Profile (will return error)
+mutation CreatePostNoAuthor {
+  createPost(input: {
+    title: "Test"
+    content: "Content"
+  }) {
+    success
+    errors
+    post {
+      id
+    }
+  }
+}
+
+# Update Post as Non-Owner (will return permission error)
+mutation UpdatePostUnauthorized {
+  updatePost(
+    id: "1"
+    input: {
+      title: "Hacked Title"
+    }
+  ) {
+    success
+    errors
+    post {
+      id
+    }
+  }
+}
