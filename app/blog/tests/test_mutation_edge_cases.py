@@ -2,8 +2,9 @@
 
 from unittest.mock import Mock
 
-import pytest
 from django.utils import timezone
+
+import pytest
 
 from blog.models import Author, BlogPost, Comment
 from core.schema import schema

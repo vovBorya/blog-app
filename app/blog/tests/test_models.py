@@ -1,7 +1,8 @@
 """Tests for blog models."""
 
-import pytest
 from django.utils import timezone
+
+import pytest
 
 from blog.models import Author, BlogPost, Comment
 

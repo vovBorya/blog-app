@@ -40,14 +40,14 @@ jobs:
 
       - name: Check code formatting with Black
         working-directory: app
-        run: black --check app/
+        run: black --check .
 
       - name: Check import sorting with isort
         working-directory: app
-        run: isort --check-only app/
+        run: isort --check-only .
 
       - name: Lint with flake8
-        run: flake8 --config=.flake8 app/
+        run: flake8 --config=.flake8 .
 
   security:
     name: Security Checks
@@ -118,7 +118,7 @@ jobs:
         working-directory: app
         env:
           DEBUG: "True"
-          SECRET_KEY: test-secret-key
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
           POSTGRES_DB: ${{ env.POSTGRES_DB }}
           POSTGRES_USER: ${{ env.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
@@ -130,7 +130,7 @@ jobs:
         working-directory: app
         env:
           DEBUG: "True"
-          SECRET_KEY: test-secret-key
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
           POSTGRES_DB: ${{ env.POSTGRES_DB }}
           POSTGRES_USER: ${{ env.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
@@ -182,7 +182,7 @@ jobs:
         working-directory: app
         env:
           DEBUG: "True"
-          SECRET_KEY: test-secret-key
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
           POSTGRES_DB: ${{ env.POSTGRES_DB }}
           POSTGRES_USER: ${{ env.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}

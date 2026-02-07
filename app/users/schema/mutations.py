@@ -2,11 +2,12 @@
 
 import re
 
-import graphene
-import graphql_jwt
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+
+import graphene
+import graphql_jwt
 from graphql_jwt.decorators import login_required
 
 from .types import UserType
