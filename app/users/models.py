@@ -89,16 +89,10 @@ class PasswordResetToken(models.Model):
         db_index=True,
         help_text="Unique token for password reset",
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True, help_text="When the token was created"
-    )
+    created_at = models.DateTimeField(auto_now_add=True, help_text="When the token was created")
     expires_at = models.DateTimeField(help_text="When the token expires")
-    used_at = models.DateTimeField(
-        null=True, blank=True, help_text="When the token was used"
-    )
-    is_active = models.BooleanField(
-        default=True, help_text="Whether the token is still active"
-    )
+    used_at = models.DateTimeField(null=True, blank=True, help_text="When the token was used")
+    is_active = models.BooleanField(default=True, help_text="Whether the token is still active")
 
     class Meta:
         db_table = "password_reset_tokens"
@@ -123,11 +117,7 @@ class PasswordResetToken(models.Model):
 
     def is_valid(self):
         """Check if token is valid (not expired and not used)."""
-        return (
-            self.is_active
-            and self.used_at is None
-            and timezone.now() < self.expires_at
-        )
+        return self.is_active and self.used_at is None and timezone.now() < self.expires_at
 
     def mark_as_used(self):
         """Mark token as used."""

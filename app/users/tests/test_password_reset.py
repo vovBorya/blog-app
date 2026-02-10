@@ -3,9 +3,10 @@
 from datetime import timedelta
 from unittest.mock import patch
 
-import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+
+import pytest
 from graphene.test import Client
 
 from core.schema import schema
@@ -41,7 +42,9 @@ class TestRequestPasswordReset:
             )
 
         assert result["data"]["requestPasswordReset"]["success"] is True
-        assert "password reset link has been sent" in result["data"]["requestPasswordReset"]["message"]
+        assert (
+            "password reset link has been sent" in result["data"]["requestPasswordReset"]["message"]
+        )
         assert result["data"]["requestPasswordReset"]["errors"] is None
 
         # Verify token was created
@@ -77,7 +80,9 @@ class TestRequestPasswordReset:
 
         # Should still return success for security (don't reveal if email exists)
         assert result["data"]["requestPasswordReset"]["success"] is True
-        assert "password reset link has been sent" in result["data"]["requestPasswordReset"]["message"]
+        assert (
+            "password reset link has been sent" in result["data"]["requestPasswordReset"]["message"]
+        )
 
         # Verify no email was sent
         mock_send_mail.assert_not_called()
@@ -179,7 +184,10 @@ class TestConfirmPasswordReset:
         )
 
         assert result["data"]["confirmPasswordReset"]["success"] is True
-        assert "Password has been reset successfully" in result["data"]["confirmPasswordReset"]["message"]
+        assert (
+            "Password has been reset successfully"
+            in result["data"]["confirmPasswordReset"]["message"]
+        )
         assert result["data"]["confirmPasswordReset"]["errors"] is None
 
         # Verify password was changed

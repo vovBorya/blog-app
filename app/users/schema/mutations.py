@@ -260,8 +260,9 @@ class RequestPasswordReset(graphene.Mutation):
 
     @classmethod
     def mutate(cls, root, info, input):
-        from django.core.mail import send_mail
         from django.conf import settings
+        from django.core.mail import send_mail
+
         from ..models import PasswordResetToken
 
         try:
@@ -270,21 +271,22 @@ class RequestPasswordReset(graphene.Mutation):
             # Don't reveal if email exists for security
             return RequestPasswordReset(
                 success=True,
-                message="If an account with this email exists, a password reset link has been sent.",
+                message=(
+                    "If an account with this email exists, "
+                    "a password reset link has been sent."
+                ),
                 errors=None,
             )
 
         # Deactivate any existing active tokens for this user
-        PasswordResetToken.objects.filter(user=user, is_active=True).update(
-            is_active=False
-        )
+        PasswordResetToken.objects.filter(user=user, is_active=True).update(is_active=False)
 
         # Create new token
         reset_token = PasswordResetToken.objects.create(user=user)
 
         # Send email
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token.token}"
-        
+
         try:
             send_mail(
                 subject="Password Reset Request",
