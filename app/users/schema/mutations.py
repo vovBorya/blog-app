@@ -272,8 +272,7 @@ class RequestPasswordReset(graphene.Mutation):
             return RequestPasswordReset(
                 success=True,
                 message=(
-                    "If an account with this email exists, "
-                    "a password reset link has been sent."
+                    "If an account with this email exists, " "a password reset link has been sent."
                 ),
                 errors=None,
             )
