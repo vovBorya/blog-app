@@ -47,6 +47,7 @@ jobs:
         run: isort --check-only .
 
       - name: Lint with flake8
+        working-directory: app
         run: flake8 --config=.flake8 .
 
   security:
