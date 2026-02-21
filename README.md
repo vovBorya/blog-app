@@ -256,6 +256,29 @@ docker-compose exec web flake8 .
 docker-compose exec web mypy .
 ```
 
+### Pre-commit Hook
+
+A pre-commit hook is provided to automatically run code quality checks and tests before every commit. It runs the same commands as the **Code Quality** and **Running Tests** sections above.
+
+**Setup (one-time):**
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+The hook will now run automatically on `git commit`. To run it manually against all files:
+```bash
+pre-commit run --all-files
+```
+
+**What the hook checks:**
+1. `black --check` – code formatting
+2. `isort --check-only` – import sorting
+3. `flake8` – linting
+4. `pytest` – full test suite
+
+The hook detects whether the Docker web container is running and executes commands inside it; otherwise it falls back to locally installed tools. The commit is blocked if any check fails.
+
 ### Database Commands
 
 ```bash
