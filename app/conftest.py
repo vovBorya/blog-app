@@ -5,7 +5,15 @@ This file is automatically loaded by pytest and provides fixtures
 available to all test files.
 """
 
+import os
+
+import django
+
 import pytest
+
+# Configure Django BEFORE any other imports
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
+django.setup()
 
 
 def get_user_model():
@@ -42,6 +50,12 @@ def create_user():
         return User.objects.create_user(email=email, username=username, password=password, **kwargs)
 
     return _create_user
+
+
+@pytest.fixture
+def user(create_user):
+    """Create and return a regular user."""
+    return create_user()
 
 
 @pytest.fixture
