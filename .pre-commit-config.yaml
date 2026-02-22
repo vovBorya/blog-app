@@ -1,0 +1,31 @@
+# Pre-commit hook configuration
+# https://pre-commit.com/
+#
+# Install:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Run manually against all files:
+#   pre-commit run --all-files
+#
+# The hook executes scripts/pre-commit.sh which runs, in order:
+#   Code Quality (README.md § Code Quality):
+#     - black --check
+#     - isort --check-only
+#     - flake8
+#   Tests (README.md § Running Tests):
+#     - pytest
+#
+# Commands are executed inside the Docker web container when it is running,
+# otherwise they fall back to locally installed tools.
+
+repos:
+  - repo: local
+    hooks:
+      - id: blog-app-checks
+        name: Blog App – code quality & tests
+        entry: scripts/pre-commit.sh
+        language: script
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
