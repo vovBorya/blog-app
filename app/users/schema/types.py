@@ -26,6 +26,7 @@ class UserType(DjangoObjectType):
             "last_name",
             "bio",
             "avatar_url",
+            "about_me",
             "is_active",
             "is_staff",
             "date_joined",
