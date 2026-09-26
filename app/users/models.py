@@ -47,6 +47,12 @@ class User(AbstractUser):
         help_text="URL to the user avatar image.",
     )
 
+    about_me = models.TextField(
+        "about me",
+        blank=True,
+        help_text="Extended information about the user.",
+    )
+
     class Meta:
         db_table = "users"
         verbose_name = "User"
