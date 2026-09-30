@@ -3,7 +3,7 @@
 import graphene
 from graphql_jwt.decorators import login_required
 
-from blog.models import Author, BlogPost, Comment
+from blog.models import Author, BlogPost, Comment, Like
 
 from .types import AuthorType, BlogPostType, CommentType
 
@@ -361,6 +361,79 @@ class UnpublishPost(graphene.Mutation):
 
 
 # ============================================
+# Like Mutations
+# ============================================
+
+
+class LikePost(graphene.Mutation):
+    """
+    Like a blog post.
+
+    Requires authentication. A user may like a given post only once.
+    """
+
+    class Arguments:
+        post_id = graphene.ID(required=True, description="Post ID to like")
+
+    post = graphene.Field(BlogPostType)
+    success = graphene.Boolean()
+    errors = graphene.List(graphene.String)
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, post_id):
+        user = info.context.user
+
+        try:
+            post = BlogPost.objects.get(pk=post_id)
+        except BlogPost.DoesNotExist:
+            return LikePost(post=None, success=False, errors=["Post not found."])
+
+        if Like.objects.filter(post=post, user=user).exists():
+            return LikePost(
+                post=None,
+                success=False,
+                errors=["You have already liked this post."],
+            )
+
+        Like.objects.create(post=post, user=user)
+        return LikePost(post=post, success=True, errors=None)
+
+
+class UnlikePost(graphene.Mutation):
+    """
+    Unlike a previously liked blog post.
+    """
+
+    class Arguments:
+        post_id = graphene.ID(required=True, description="Post ID to unlike")
+
+    post = graphene.Field(BlogPostType)
+    success = graphene.Boolean()
+    errors = graphene.List(graphene.String)
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, post_id):
+        user = info.context.user
+
+        try:
+            post = BlogPost.objects.get(pk=post_id)
+        except BlogPost.DoesNotExist:
+            return UnlikePost(post=None, success=False, errors=["Post not found."])
+
+        deleted_count, _ = Like.objects.filter(post=post, user=user).delete()
+        if deleted_count == 0:
+            return UnlikePost(
+                post=None,
+                success=False,
+                errors=["You have not liked this post."],
+            )
+
+        return UnlikePost(post=post, success=True, errors=None)
+
+
+# ============================================
 # Comment Mutations
 # ============================================
 
@@ -571,6 +644,10 @@ class Mutation(graphene.ObjectType):
     delete_post = DeletePost.Field(description="Delete a blog post")
     publish_post = PublishPost.Field(description="Publish a blog post")
     unpublish_post = UnpublishPost.Field(description="Unpublish a blog post")
+
+    # Like mutations
+    like_post = LikePost.Field(description="Like a blog post")
+    unlike_post = UnlikePost.Field(description="Unlike a blog post")
 
     # Comment mutations
     create_comment = CreateComment.Field(description="Create a comment")

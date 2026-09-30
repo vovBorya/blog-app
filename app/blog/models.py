@@ -156,6 +156,11 @@ class BlogPost(models.Model):
         """Return the number of approved comments on this post."""
         return self.comments.filter(is_approved=True).count()
 
+    @property
+    def like_count(self):
+        """Return the number of likes on this post."""
+        return self.likes.count()
+
     def publish(self):
         """Publish the blog post."""
         self.status = self.Status.PUBLISHED
@@ -222,3 +227,41 @@ class Comment(models.Model):
     def is_reply(self):
         """Check if this comment is a reply to another comment."""
         return self.parent is not None
+
+
+class Like(models.Model):
+    """
+    Like model for blog posts.
+
+    Tracks which users have liked which posts. A user may like a given
+    post at most once, enforced by a unique constraint.
+    """
+
+    post = models.ForeignKey(
+        BlogPost,
+        on_delete=models.CASCADE,
+        related_name="likes",
+        help_text="The blog post that was liked.",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="likes",
+        help_text="The user who liked the post.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "likes"
+        verbose_name = "Like"
+        verbose_name_plural = "Likes"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["post", "user"], name="unique_post_like"),
+        ]
+        indexes = [
+            models.Index(fields=["post", "user"]),
+        ]
+
+    def __str__(self):
+        return f'{self.user.username} likes "{self.post.title}"'
