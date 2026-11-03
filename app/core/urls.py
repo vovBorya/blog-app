@@ -11,6 +11,7 @@ from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 
 from graphene_django.views import GraphQLView
+from graphql_jwt.decorators import jwt_cookie
 
 
 def health_check(request):
@@ -40,6 +41,6 @@ def health_check(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("graphql/", csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    path("graphql/", csrf_exempt(jwt_cookie(GraphQLView.as_view(graphiql=True)))),
     path("health/", health_check, name="health_check"),
 ]

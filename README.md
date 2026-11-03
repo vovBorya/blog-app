@@ -1,20 +1,22 @@
 # Blog API with GraphQL
 
-A modern blog API built with Django and GraphQL, featuring user authentication, blog posts, comments, and a complete CI/CD pipeline.
+A modern blog API built with Django and GraphQL, with a React client for signing in, reading posts, and creating them.
 
 ## Tech Stack
 
 - **Backend**: Python 3.11, Django 4.2+
 - **API**: GraphQL with Graphene-Django
 - **Database**: PostgreSQL 15
-- **Authentication**: JWT (JSON Web Tokens)
+- **Authentication**: JWT in an HttpOnly cookie (`django-graphql-jwt`)
+- **Frontend**: React, TypeScript, Vite, Material UI, React Router, Redux Toolkit, Apollo Client
 - **Containerization**: Docker & Docker Compose
 - **CI/CD**: GitHub Actions
 - **Testing**: pytest with coverage
 
 ## Features
 
-- User registration and authentication with JWT
+- User registration and email sign-in, with the session stored in an HttpOnly cookie
+- React client for the post list, creating a post, and a local payment form
 - CRUD operations for blog posts
 - Comment system with nested replies
 - Author profiles
@@ -28,6 +30,7 @@ A modern blog API built with Django and GraphQL, featuring user authentication, 
 ### Prerequisites
 
 - Docker and Docker Compose
+- Node.js 22+ and npm, for the frontend
 - Git
 
 ### Installation
@@ -64,10 +67,19 @@ docker-compose exec web python manage.py createsuperuser
 docker-compose exec web python manage.py seed_data
 ```
 
+7. Start the frontend (in a new terminal, from the repository root):
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
 The API is now available at:
 - **GraphQL Playground**: http://localhost:8000/graphql/
 - **Admin Panel**: http://localhost:8000/admin/
 - **Health Check**: http://localhost:8000/health/
+- **Frontend**: http://localhost:3000/
 
 ## Environment Variables
 
@@ -83,6 +95,35 @@ The API is now available at:
 | `POSTGRES_PORT` | PostgreSQL port | `5432` |
 | `JWT_EXPIRATION_DELTA_MINUTES` | JWT token expiration | `60` |
 | `JWT_REFRESH_EXPIRATION_DAYS` | JWT refresh token expiration | `7` |
+
+## Frontend
+
+The client lives in `frontend/` and is a Vite app with no server rendering. It talks to the GraphQL API with Apollo Client and sends cookies (`credentials: "include"`). Redux Toolkit stores the signed-in user only. The JWT itself stays in an HttpOnly cookie the browser attaches to each request.
+
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+`frontend/.env`:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_GRAPHQL_URL` | GraphQL endpoint | `http://localhost:8000/graphql/` |
+
+The dev server uses port 3000 so it matches `CORS_ALLOWED_ORIGINS`.
+
+| Path | Page |
+|------|------|
+| `/` | Latest published posts, five at a time, loading the next page at the bottom of the list |
+| `/sign-in` | Email sign-in, or a phone field that validates the number and explains that phone sign-in is not available |
+| `/sign-up` | Registration |
+| `/posts/new` | Create a post (signed-in) |
+| `/payment` | Checkout form that confirms locally and does not charge a card (signed-in) |
+
+Sign-out calls `deleteTokenCookie`, which is the only way to clear the HttpOnly cookie. A refresh restores the session with the `me` query.
 
 ## GraphQL API Examples
 
@@ -104,7 +145,6 @@ mutation {
       email
       username
     }
-    token
   }
 }
 ```
@@ -121,7 +161,6 @@ mutation {
       id
       email
     }
-    token
   }
 }
 ```
@@ -338,6 +377,16 @@ blog-app/
 │   ├── base.txt
 │   ├── dev.txt
 │   └── prod.txt
+├── frontend/
+│   ├── src/
+│   │   ├── app/                # Store, router, theme, providers
+│   │   ├── features/
+│   │   │   ├── auth/
+│   │   │   ├── posts/
+│   │   │   └── payment/
+│   │   └── shared/             # Apollo client, layout, route guards
+│   ├── .env.example
+│   └── package.json
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
@@ -363,13 +412,17 @@ The project includes GitHub Actions workflows for:
 
 ## API Authentication
 
-All protected endpoints require a JWT token in the Authorization header:
+`signIn` and `signUp` set a `JWT` cookie (`HttpOnly`, `SameSite=Lax`). The token is not returned in the JSON body. Send the cookie on later requests (`credentials: "include"` in the browser). The API still accepts an `Authorization: Bearer` header when a cookie is not present.
 
-```
-Authorization: Bearer <your-jwt-token>
-```
+Clear the session with:
 
-To get a token, use the `signIn` mutation and include the returned token in subsequent requests.
+```graphql
+mutation {
+  deleteTokenCookie {
+    deleted
+  }
+}
+```
 
 ## Contributing
 
