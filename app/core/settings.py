@@ -148,6 +148,9 @@ GRAPHQL_JWT = {
         days=config("JWT_REFRESH_EXPIRATION_DAYS", default=7, cast=int)
     ),
     "JWT_AUTH_HEADER_PREFIX": "Bearer",
+    "JWT_COOKIE_SAMESITE": "Lax",
+    # Local HTTP cannot store a Secure cookie. Production HTTPS should set this.
+    "JWT_COOKIE_SECURE": not DEBUG,
 }
 
 # Authentication backends

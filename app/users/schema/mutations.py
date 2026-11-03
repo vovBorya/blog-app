@@ -5,6 +5,7 @@ import re
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.http import HttpRequest
 
 import graphene
 import graphql_jwt
@@ -13,6 +14,17 @@ from graphql_jwt.decorators import login_required
 from .types import UserType
 
 User = get_user_model()
+
+
+def _stash_jwt_cookie(info, token):
+    """Attach the JWT to the Django request for the HttpOnly cookie wrapper.
+
+    ``schema.execute`` has no request, so that path skips the assignment and the
+    token stays out of the JSON body either way.
+    """
+    context = getattr(info, "context", None)
+    if isinstance(context, HttpRequest):
+        context.jwt_token = token
 
 
 class SignUpInput(graphene.InputObjectType):
@@ -29,7 +41,8 @@ class SignUp(graphene.Mutation):
     """
     User registration mutation.
 
-    Creates a new user account and returns a JWT token.
+    Creates a new user account and sets an HttpOnly JWT cookie.
+    The token is not returned in the response body.
     """
 
     class Arguments:
@@ -87,8 +100,9 @@ class SignUp(graphene.Mutation):
         from graphql_jwt.shortcuts import get_token
 
         token = get_token(user)
+        _stash_jwt_cookie(info, token)
 
-        return SignUp(user=user, token=token, success=True, errors=None)
+        return SignUp(user=user, token=None, success=True, errors=None)
 
 
 class SignInInput(graphene.InputObjectType):
@@ -102,7 +116,8 @@ class SignIn(graphene.Mutation):
     """
     User login mutation.
 
-    Authenticates user credentials and returns a JWT token.
+    Authenticates user credentials and sets an HttpOnly JWT cookie.
+    The token is not returned in the response body.
     """
 
     class Arguments:
@@ -152,8 +167,9 @@ class SignIn(graphene.Mutation):
         from graphql_jwt.shortcuts import get_token
 
         token = get_token(user)
+        _stash_jwt_cookie(info, token)
 
-        return SignIn(user=user, token=token, success=True, errors=None)
+        return SignIn(user=user, token=None, success=True, errors=None)
 
 
 class UpdateProfile(graphene.Mutation):
@@ -381,6 +397,9 @@ class Mutation(graphene.ObjectType):
     # Authentication mutations
     sign_up = SignUp.Field(description="Register a new user account")
     sign_in = SignIn.Field(description="Sign in with email and password")
+    delete_token_cookie = graphql_jwt.DeleteJSONWebTokenCookie.Field(
+        description="Clear the HttpOnly JWT cookie"
+    )
 
     # JWT mutations from graphql_jwt
     token_auth = graphql_jwt.ObtainJSONWebToken.Field()
