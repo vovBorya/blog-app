@@ -4,6 +4,7 @@ Custom User model for the blog application.
 Extends Django's AbstractUser to add custom fields and methods.
 """
 
+import hashlib
 import secrets
 from datetime import timedelta
 
@@ -29,9 +30,20 @@ class User(AbstractUser):
     email = models.EmailField(
         "email address",
         unique=True,
+        blank=True,
+        null=True,
         error_messages={
             "unique": "A user with that email already exists.",
         },
+    )
+
+    phone = models.CharField(
+        "phone number",
+        max_length=16,
+        unique=True,
+        blank=True,
+        null=True,
+        help_text="Phone number in E.164 format.",
     )
 
     # Additional fields can be added here
@@ -61,10 +73,19 @@ class User(AbstractUser):
         indexes = [
             models.Index(fields=["email"]),
             models.Index(fields=["username"]),
+            models.Index(fields=["phone"], name="users_phone_e164_idx"),
         ]
 
+    def save(self, *args, **kwargs):
+        """Store blank email and phone as NULL so multiple phone-only users are allowed."""
+        if not self.email:
+            self.email = None
+        if not self.phone:
+            self.phone = None
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.email
+        return self.email or self.phone or self.username
 
     def get_full_name(self):
         """Return the first_name plus the last_name, with a space in between."""
@@ -111,7 +132,7 @@ class PasswordResetToken(models.Model):
         ]
 
     def __str__(self):
-        return f"Password reset token for {self.user.email}"
+        return f"Password reset token for {self.user}"
 
     def save(self, *args, **kwargs):
         """Override save to generate token and set expiration."""
@@ -130,3 +151,62 @@ class PasswordResetToken(models.Model):
         self.used_at = timezone.now()
         self.is_active = False
         self.save()
+
+
+class PhoneSignupTicket(models.Model):
+    """
+    Single-use proof that a phone number passed SMS verification.
+
+    Issued when the code is accepted and no user exists yet. The raw token is
+    returned once; only its SHA-256 hash is stored.
+    """
+
+    phone = models.CharField(max_length=16, help_text="Verified phone number in E.164 format.")
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "phone_signup_tickets"
+        verbose_name = "Phone Signup Ticket"
+        verbose_name_plural = "Phone Signup Tickets"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["phone"], name="phone_signup_phone_idx"),
+        ]
+
+    def __str__(self):
+        return f"Phone signup ticket for {self.phone}"
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(minutes=10)
+        super().save(*args, **kwargs)
+
+    def is_valid(self):
+        """Return whether this ticket can still create an account."""
+        return self.used_at is None and timezone.now() < self.expires_at
+
+    def mark_as_used(self):
+        """Consume the ticket so it cannot create another account."""
+        self.used_at = timezone.now()
+        self.save(update_fields=["used_at"])
+
+    @staticmethod
+    def hash_token(raw_token):
+        """Return the SHA-256 hex digest of a signup token."""
+        return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def issue(cls, phone):
+        """Invalidate unused tickets for this phone and return a new raw token."""
+        raw_token = secrets.token_urlsafe(32)
+        now = timezone.now()
+        cls.objects.filter(phone=phone, used_at__isnull=True).update(used_at=now)
+        cls.objects.create(
+            phone=phone,
+            token_hash=cls.hash_token(raw_token),
+            expires_at=now + timedelta(minutes=10),
+        )
+        return raw_token

@@ -21,6 +21,7 @@ class UserType(DjangoObjectType):
         fields = (
             "id",
             "email",
+            "phone",
             "username",
             "first_name",
             "last_name",

@@ -182,6 +182,12 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@blogapp.com")
 # Frontend URL for password reset links
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
 
+# Phone verification. "console" logs a 6-digit code. "twilio" sends an SMS.
+SMS_BACKEND = config("SMS_BACKEND", default="console")
+TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID", default="")
+TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN", default="")
+TWILIO_VERIFY_SERVICE_SID = config("TWILIO_VERIFY_SERVICE_SID", default="")
+
 # Security settings for production
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
