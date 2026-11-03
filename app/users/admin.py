@@ -3,7 +3,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import PasswordResetToken, User
+from .models import PasswordResetToken, PhoneSignupTicket, User
 
 
 @admin.register(User)
@@ -16,6 +16,7 @@ class UserAdmin(BaseUserAdmin):
 
     list_display = (
         "email",
+        "phone",
         "username",
         "first_name",
         "last_name",
@@ -24,11 +25,11 @@ class UserAdmin(BaseUserAdmin):
         "date_joined",
     )
     list_filter = ("is_staff", "is_active", "date_joined")
-    search_fields = ("email", "username", "first_name", "last_name")
+    search_fields = ("email", "phone", "username", "first_name", "last_name")
     ordering = ("-date_joined",)
 
     fieldsets = (
-        (None, {"fields": ("email", "username", "password")}),
+        (None, {"fields": ("email", "phone", "username", "password")}),
         ("Personal info", {"fields": ("first_name", "last_name", "bio", "avatar_url")}),
         (
             "Permissions",
@@ -81,4 +82,21 @@ class PasswordResetTokenAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         """Disable manual token creation through admin."""
+        return False
+
+
+@admin.register(PhoneSignupTicket)
+class PhoneSignupTicketAdmin(admin.ModelAdmin):
+    """Read-only view of phone signup tickets. Raw tokens are not stored."""
+
+    list_display = ("phone", "created_at", "expires_at", "used_at")
+    list_filter = ("created_at", "expires_at")
+    search_fields = ("phone",)
+    readonly_fields = ("phone", "token_hash", "created_at", "expires_at", "used_at")
+    ordering = ("-created_at",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False

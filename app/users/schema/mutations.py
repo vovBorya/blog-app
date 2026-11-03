@@ -5,11 +5,22 @@ import re
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.http import HttpRequest
 
 import graphene
 import graphql_jwt
 from graphql_jwt.decorators import login_required
+
+from users.models import PhoneSignupTicket
+from users.verification import (
+    DeliveryError,
+    PhoneVerificationError,
+    get_verification_backend,
+    mark_send_cooldown,
+    normalize_phone,
+    send_cooldown_active,
+)
 
 from .types import UserType
 
@@ -391,12 +402,242 @@ class ConfirmPasswordReset(graphene.Mutation):
         )
 
 
+class PhoneAuthStatus(graphene.Enum):
+    """Result of checking a phone verification code."""
+
+    AUTHENTICATED = "authenticated"
+    NEEDS_USERNAME = "needs_username"
+
+
+class RequestPhoneCode(graphene.Mutation):
+    """Send a verification code without revealing whether the number is registered."""
+
+    class Arguments:
+        phone = graphene.String(required=True, description="Phone number, preferably E.164")
+
+    success = graphene.Boolean()
+    errors = graphene.List(graphene.String)
+
+    @classmethod
+    def mutate(cls, root, info, phone):
+        try:
+            normalized = normalize_phone(phone)
+        except PhoneVerificationError as exc:
+            return RequestPhoneCode(success=False, errors=[str(exc)])
+
+        if send_cooldown_active(normalized):
+            return RequestPhoneCode(
+                success=False,
+                errors=["Please wait before requesting another code."],
+            )
+
+        try:
+            get_verification_backend().send_code(normalized)
+        except DeliveryError:
+            return RequestPhoneCode(
+                success=False,
+                errors=["Could not send a verification code."],
+            )
+
+        mark_send_cooldown(normalized)
+        return RequestPhoneCode(success=True, errors=None)
+
+
+class VerifyPhoneCode(graphene.Mutation):
+    """
+    Check a verification code.
+
+    An existing active user is signed in. A new number receives a single-use
+    signup token and no session cookie.
+    """
+
+    class Arguments:
+        phone = graphene.String(required=True, description="Phone number the code was sent to")
+        code = graphene.String(required=True, description="Verification code")
+
+    success = graphene.Boolean()
+    errors = graphene.List(graphene.String)
+    status = PhoneAuthStatus()
+    signup_token = graphene.String()
+    user = graphene.Field(UserType)
+    token = graphene.String()
+
+    @classmethod
+    def mutate(cls, root, info, phone, code):
+        try:
+            normalized = normalize_phone(phone)
+        except PhoneVerificationError as exc:
+            return VerifyPhoneCode(
+                success=False,
+                errors=[str(exc)],
+                status=None,
+                signup_token=None,
+                user=None,
+                token=None,
+            )
+
+        if not get_verification_backend().check_code(normalized, code):
+            return VerifyPhoneCode(
+                success=False,
+                errors=["Invalid verification code."],
+                status=None,
+                signup_token=None,
+                user=None,
+                token=None,
+            )
+
+        user = User.objects.filter(phone=normalized).first()
+        if user is not None:
+            if not user.is_active:
+                return VerifyPhoneCode(
+                    success=False,
+                    errors=["This account has been deactivated."],
+                    status=None,
+                    signup_token=None,
+                    user=None,
+                    token=None,
+                )
+
+            from graphql_jwt.shortcuts import get_token
+
+            jwt_token = get_token(user)
+            _stash_jwt_cookie(info, jwt_token)
+            return VerifyPhoneCode(
+                success=True,
+                errors=None,
+                status=PhoneAuthStatus.AUTHENTICATED,
+                signup_token=None,
+                user=user,
+                token=None,
+            )
+
+        signup_token = PhoneSignupTicket.issue(normalized)
+        return VerifyPhoneCode(
+            success=True,
+            errors=None,
+            status=PhoneAuthStatus.NEEDS_USERNAME,
+            signup_token=signup_token,
+            user=None,
+            token=None,
+        )
+
+
+class CompletePhoneSignUpInput(graphene.InputObjectType):
+    """Input for creating an account after phone verification."""
+
+    signup_token = graphene.String(required=True, description="Token from verifyPhoneCode")
+    username = graphene.String(required=True, description="Unique username")
+    first_name = graphene.String(description="User first name")
+    last_name = graphene.String(description="User last name")
+
+
+class CompletePhoneSignUp(graphene.Mutation):
+    """Create a passwordless account for a phone number that just passed verification."""
+
+    class Arguments:
+        input = CompletePhoneSignUpInput(required=True)
+
+    user = graphene.Field(UserType)
+    token = graphene.String()
+    success = graphene.Boolean()
+    errors = graphene.List(graphene.String)
+
+    @classmethod
+    def mutate(cls, root, info, input):
+        username = (input.username or "").strip()
+        username_regex = r"^[a-zA-Z0-9_-]{3,30}$"
+        if not re.match(username_regex, username):
+            return CompletePhoneSignUp(
+                user=None,
+                token=None,
+                success=False,
+                errors=[
+                    "Username must be 3-30 characters and contain only "
+                    "letters, numbers, underscores, and hyphens."
+                ],
+            )
+
+        if User.objects.filter(username=username).exists():
+            return CompletePhoneSignUp(
+                user=None,
+                token=None,
+                success=False,
+                errors=["A user with this username already exists."],
+            )
+
+        token_hash = PhoneSignupTicket.hash_token(input.signup_token or "")
+        invalid_ticket = CompletePhoneSignUp(
+            user=None,
+            token=None,
+            success=False,
+            errors=["This signup session is invalid or has expired."],
+        )
+
+        with transaction.atomic():
+            try:
+                ticket = PhoneSignupTicket.objects.select_for_update().get(token_hash=token_hash)
+            except PhoneSignupTicket.DoesNotExist:
+                return invalid_ticket
+
+            if not ticket.is_valid():
+                return invalid_ticket
+
+            if User.objects.filter(phone=ticket.phone).exists():
+                ticket.mark_as_used()
+                return CompletePhoneSignUp(
+                    user=None,
+                    token=None,
+                    success=False,
+                    errors=["A user with this phone number already exists."],
+                )
+
+            if User.objects.filter(username=username).exists():
+                return CompletePhoneSignUp(
+                    user=None,
+                    token=None,
+                    success=False,
+                    errors=["A user with this username already exists."],
+                )
+
+            user = User(
+                username=username,
+                email=None,
+                phone=ticket.phone,
+                first_name=(input.get("first_name") or "").strip(),
+                last_name=(input.get("last_name") or "").strip(),
+            )
+            user.set_unusable_password()
+            try:
+                user.save()
+            except IntegrityError:
+                return CompletePhoneSignUp(
+                    user=None,
+                    token=None,
+                    success=False,
+                    errors=["A user with this username already exists."],
+                )
+            ticket.mark_as_used()
+
+        from graphql_jwt.shortcuts import get_token
+
+        jwt_token = get_token(user)
+        _stash_jwt_cookie(info, jwt_token)
+        return CompletePhoneSignUp(user=user, token=None, success=True, errors=None)
+
+
 class Mutation(graphene.ObjectType):
     """Root mutation class for user operations."""
 
     # Authentication mutations
     sign_up = SignUp.Field(description="Register a new user account")
     sign_in = SignIn.Field(description="Sign in with email and password")
+    request_phone_code = RequestPhoneCode.Field(description="Send a phone verification code")
+    verify_phone_code = VerifyPhoneCode.Field(
+        description="Verify a phone code and sign in or start signup"
+    )
+    complete_phone_sign_up = CompletePhoneSignUp.Field(
+        description="Create an account after phone verification"
+    )
     delete_token_cookie = graphql_jwt.DeleteJSONWebTokenCookie.Field(
         description="Clear the HttpOnly JWT cookie"
     )

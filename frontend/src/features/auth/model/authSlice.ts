@@ -5,7 +5,7 @@ export type SessionStatus = 'unknown' | 'authenticated' | 'anonymous'
 
 export type AuthUser = {
   id: string
-  email: string
+  email: string | null
   username: string
   firstName: string
   lastName: string
@@ -13,7 +13,7 @@ export type AuthUser = {
 
 export type AuthUserInput = {
   id: string
-  email: string
+  email: string | null
   username: string
   firstName?: string | null
   lastName?: string | null
@@ -38,7 +38,7 @@ const authSlice = createSlice({
       state.status = 'authenticated'
       state.user = {
         id: user.id,
-        email: user.email,
+        email: user.email ?? null,
         username: user.username,
         firstName: user.firstName ?? '',
         lastName: user.lastName ?? '',
