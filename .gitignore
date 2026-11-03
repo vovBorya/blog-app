@@ -172,3 +172,6 @@ media/
 *.pem
 *.key
 secrets/
+
+# Node
+node_modules/
