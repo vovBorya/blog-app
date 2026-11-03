@@ -45,6 +45,8 @@ class BlogPostType(DjangoObjectType):
     """
 
     comment_count = graphene.Int(description="Number of approved comments")
+    like_count = graphene.Int(description="Number of likes on this post")
+    is_liked_by_me = graphene.Boolean(description="Whether the current viewer has liked this post")
     author = graphene.Field(AuthorType, description="The author of this post")
     status = graphene.String(description="Publication status of the post")
 
@@ -74,6 +76,17 @@ class BlogPostType(DjangoObjectType):
     def resolve_comment_count(self, info):
         """Resolve the number of approved comments."""
         return self.comment_count
+
+    def resolve_like_count(self, info):
+        """Resolve the number of likes."""
+        return self.like_count
+
+    def resolve_is_liked_by_me(self, info):
+        """Resolve whether the current viewer has liked this post."""
+        user = info.context.user
+        if not user.is_authenticated:
+            return False
+        return self.likes.filter(user=user).exists()
 
     def resolve_status(self, info):
         """Return the lowercase status value."""

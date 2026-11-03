@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Author, BlogPost, Comment
+from .models import Author, BlogPost, Comment, Like
 
 
 @admin.register(Author)
@@ -109,3 +109,13 @@ class CommentAdmin(admin.ModelAdmin):
         """Disapprove selected comments."""
         queryset.update(is_approved=False)
         self.message_user(request, f"{queryset.count()} comment(s) disapproved.")
+
+
+@admin.register(Like)
+class LikeAdmin(admin.ModelAdmin):
+    """Admin interface for Like model."""
+
+    list_display = ("user", "post", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("user__username", "post__title")
+    readonly_fields = ("created_at",)
