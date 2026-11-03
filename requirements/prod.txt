@@ -4,9 +4,6 @@
 # Production server
 gunicorn>=21.2.0
 
-# Static files
-whitenoise>=6.6.0
-
 # Production database connection pooling
 django-db-connection-pool>=1.2.4
 
